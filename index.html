@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تصویر گیلری - تصاویر اور کمنٹس کا اشتراک</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4361ee',
+                        'secondary': '#3a0ca3',
+                        'accent': '#7209b7',
+                        'success': '#4cc9f0',
+                        'warning': '#f72585',
+                        'light-bg': '#f8f9fa',
+                        'dark-text': '#2b2d42',
+                        'card-bg': '#ffffff'
+                    },
+                    fontFamily: {
+                        'urdu': ['Noto Nastaliq Urdu', 'system-ui']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Nastaliq Urdu', serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #4361ee, #3a0ca3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #3a0ca3, #4361ee);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #4cc9f0, #4895ef);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(45deg, #4895ef, #4cc9f0);
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #f72585, #b5179e);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(45deg, #b5179e, #f72585);
+            transform: translateY(-2px);
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4361ee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .role-tag {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            margin-right: 6px;
+        }
+        
+        .notification {
+            transition: all 0.3s ease;
+        }
+        
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* RTL specific adjustments */
+        .flex-row-reverse {
+            flex-direction: row-reverse;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+            --tw-space-x-reverse: 1;
+            margin-right: calc(1rem * var(--tw-space-x-reverse));
+            margin-left: calc(1rem * calc(1 - var(--tw-space-x-reverse)));
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #4361ee, #3a0ca3);
+            border-radius: 10px;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .photo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // =========================================================================
+        // !!! IMPORTANT !!! اہم: آپ کی فراہم کردہ Supabase کیز
+        // =========================================================================
+        const SUPABASE_URL = 'https://gwrlnukpeeiykpxnlmsd.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cmxudWtwZWVpeWtweG5sbXNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNzQyMDUsImV4cCI6MjA3NjY1MDIwNX0.WQJxd8KqwSCvE62ypdBRdHArl9UZfE4zUXlZRNnnDxc'; 
+        // =========================================================================
+
+        // ڈیبگنگ کے لیے کنسول میں کیز چیک کریں
+        console.log("Supabase URL:", SUPABASE_URL);
+        console.log("Supabase Key:", SUPABASE_ANON_KEY);
+
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            document.addEventListener('DOMContentLoaded', () => {
+                const loginScreen = document.getElementById('login-screen');
+                loginScreen.innerHTML = `
+                    <div class="p-8">
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 text-center">
+                            <h2 class="text-xl mb-3 font-bold">توثیق میں خرابی (Invalid API Key)</h2>
+                            <p class="text-base">براہ کرم کوڈ میں جا کر **SUPABASE_URL** اور **SUPABASE_ANON_KEY** کی جگہ پر اپنی صحیح کیز ڈالیں۔</p>
+                            <p class="text-sm mt-2">یہ ایرر اس لیے آرہا ہے کیونکہ Supabase کیز خالی ہیں۔</p>
+                        </div>
+                        <button class="w-full btn-primary text-white py-3 rounded-xl text-lg font-bold transition duration-300" onclick="window.location.reload()">دوبارہ لوڈ کریں</button>
+                    </div>
+                `;
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+            throw new Error("Supabase keys are missing. Please update SUPABASE_URL and SUPABASE_ANON_KEY.");
+        }
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- Role Management Variables ---
+        let userId = null;
+        let userRole = 'unauthenticated'; // Can be 'standard' or 'admin'
+        let isAuthReady = false;
+        let photosChannel = null;
+        let isManualRefresh = false; // نیا ویری ایبل
+        
+        // --- Admin Configuration ---
+        const ADMIN_SECRET = 'admin123'; // ایڈمن کے لیے خفیہ کوڈ
+
+        // localStorage سے user ID اور Role حاصل کریں
+        function getStoredUserId() {
+            return localStorage.getItem('supabase_user_id');
+        }
+        function storeUserId(id) {
+            localStorage.setItem('supabase_user_id', id);
+        }
+        function getStoredUserRole() {
+            return localStorage.getItem('user_role') || 'standard';
+        }
+        function storeUserRole(role) {
+            localStorage.setItem('user_role', role);
+        }
+
+        // بہتر ایرر ہینڈلنگ فنکشن
+        function handleError(error, context) {
+            console.error(`${context} Error:`, error);
+            
+            let userMessage = "ایک غیر متوقع خرابی پیش آئی ہے";
+            
+            if (error.message.includes('RLS')) {
+                userMessage = "اجازت کی خرابی: براہ کرم اپنے Supabase RLS سیٹ اپ چیک کریں";
+            } else if (error.message.includes('storage')) {
+                userMessage = "فائل اپ لوڈ میں خرابی";
+            } else if (error.message.includes('network')) {
+                userMessage = "نیٹ ورک کنکشن میں خرابی";
+            } else if (error.message.includes('JWT')) {
+                userMessage = "توثیق کی خرابی: براہ کرم دوبارہ لاگ ان کریں";
+            }
+            
+            showNotification(userMessage, 'error');
+            return userMessage;
+        }
+        
+        // یوزر کی توثیق (Authentication)
+        async function setupAuth(role) {
+            console.log("Setting up auth with role:", role);
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            userRole = role;
+
+            try {
+                let storedUserId = getStoredUserId();
+                let user;
+
+                // Anonymous Sign-in ضروری ہے تاکہ Supabase Storage اور Database استعمال ہو سکے
+                console.log("Attempting anonymous sign-in...");
+                let { data, error } = await supabase.auth.signInAnonymously();
+                if (error) throw error;
+                user = data.user;
+                console.log("Anonymous sign-in successful:", user.id);
+
+                userId = user.id;
+                isAuthReady = true;
+                storeUserId(userId);
+                storeUserRole(userRole);
+                
+                // UI کو اپ ڈیٹ کریں
+                updateAppUI(userRole);
+                
+                // مین ایپ دکھائیں
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                // Auth کے تیار ہونے کے بعد ڈیٹا لوڈ کریں
+                loadPhotos();
+                
+            } catch (error) {
+                console.error("Auth Error:", error);
+                handleError(error, "Authentication");
+                
+                // اگر کیز غلط ہوں تو user کو دوبارہ لاگ ان سکرین پر رکھیں
+                document.getElementById('loading-overlay').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+                isAuthReady = false;
+
+            } finally {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }
+        }
+
+        // رول کے مطابق UI اپ ڈیٹ کریں
+        function updateAppUI(role) {
+            let roleText = '';
+            let roleClass = '';
+            if (role === 'admin') {
+                roleText = 'ایڈمن';
+                roleClass = 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+            } else {
+                roleText = 'عام صارف';
+                roleClass = 'bg-green-100 text-green-800 border border-green-300';
+            }
+            
+            document.getElementById('user-id').innerHTML = 
+                `آپ کا آئی ڈی: <span class="font-mono">${userId.substring(0, 12)}...</span> <span class="role-tag ${roleClass}">${roleText}</span>`;
+            console.log(`User logged in with ID: ${userId} and Role: ${role}`);
+        }
+
+        // لاگ ان ہینڈلر
+        document.addEventListener('DOMContentLoaded', () => {
+            // لاگ ان فارم
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('standard-login-btn').addEventListener('click', () => setupAuth('standard'));
+            
+            // فوٹو اپ لوڈ فارم
+            document.getElementById('photo-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                uploadPhoto(event);
+            });
+
+            // پچھلا سیشن چیک کریں
+            if (getStoredUserId()) {
+                document.getElementById('login-message').textContent = 'ماضی کا سیشن ملا۔ براہ کرم اپنا کردار منتخب کریں یا جاری رکھیں۔';
+            } else {
+                document.getElementById('login-message').textContent = 'اپنے کردار کے ساتھ سائن ان کریں:';
+            }
+        });
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const secretInput = document.getElementById('admin-secret-input').value.trim();
+            
+            if (secretInput === ADMIN_SECRET) {
+                await setupAuth('admin');
+                showNotification("ایڈمن کے طور پر کامیابی سے لاگ ان کیا!", 'success');
+            } else if (secretInput !== '') {
+                showNotification("ایڈمن کوڈ غلط ہے۔ براہ کرم دوبارہ کوشش کریں یا بطور عام صارف جاری رکھیں۔", 'error');
+            } else {
+                 // اگر خفیہ کوڈ خالی ہے، تو معیاری لاگ ان بٹن استعمال کرنے کو کہیں۔
+                 showNotification("ایڈمن کوڈ خالی ہے، براہ کرم 'بطور عام صارف' بٹن استعمال کریں اگر آپ ایڈمن نہیں ہیں۔", 'warning');
+            }
+        }
+
+        // تصویر اپ لوڈ فنکشن - درست ورژن
+        async function uploadPhoto(event) {
+            console.log("Upload function started");
+            
+            // event کو روکیں (اگر event موجود ہو)
+            if (event && event.preventDefault) {
+                event.preventDefault();
+            }
+
+            if (!isAuthReady || !userId) {
+                console.log("Auth not ready or user ID missing");
+                showNotification("مہربانی کر کے سائن ان ہونے کا انتظار کریں...", 'warning');
+                return;
+            }
+            
+            const fileInput = document.getElementById('file-input');
+            const descriptionInput = document.getElementById('description-input');
+            const file = fileInput.files[0];
+            const description = descriptionInput.value.trim();
+
+            console.log("File:", file);
+            console.log("Description:", description);
+
+            if (!file || description === '') {
+                console.log("File or description missing");
+                showNotification("براہ کرم فائل منتخب کریں اور تفصیل شامل کریں۔", 'warning');
+                return;
+            }
+
+            // فائل سائز اور فارمیٹ چیک کریں
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                console.log("File too large:", file.size);
+                showNotification("تصویر کا سائز 5MB سے کم ہونا چاہیے", 'warning');
+                return;
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                console.log("Invalid file type:", file.type);
+                showNotification("صرف JPEG, PNG, GIF اور WebP فارمیٹس کی تصاویر قبول ہیں", 'warning');
+                return;
+            }
+
+            const fileName = `${userId}/${Date.now()}_${file.name}`;
+            console.log("File name for upload:", fileName);
+            
+            try {
+                document.getElementById('upload-status').classList.remove('hidden');
+                document.getElementById('upload-message').textContent = 'تصویر اپ لوڈ ہو رہی ہے...';
+
+                // 1. Storage میں فائل اپ لوڈ کریں
+                console.log("Starting storage upload...");
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('shared_images')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                console.log("Upload result:", { uploadData, uploadError });
+
+                if (uploadError) {
+                    throw new Error(`Storage Error: ${uploadError.message}`);
+                }
+
+                // 2. پبلک URL حاصل کریں
+                console.log("Getting public URL...");
+                const { data: publicUrlData } = supabase.storage
+                    .from('shared_images')
+                    .getPublicUrl(fileName);
+
+                console.log("Public URL data:", publicUrlData);
+                const publicUrl = publicUrlData.publicUrl;
+
+                // 3. Database میں ریکارڈ شامل کریں
+                console.log("Inserting into database...");
+                const { data: dbData, error: dbError } = await supabase
+                    .from('photos')
+                    .insert([
+                        { 
+                            Url: publicUrl, 
+                            description: description, 
+                            uploader_id: userId 
+                        }
+                    ])
+                    .select();
+
+                console.log("Database insert result:", { dbData, dbError });
+
+                if (dbError) {
+                    // DB خرابی پر Storage سے ڈیلیٹ کر دیں
+                    console.log("Database error, deleting from storage...");
+                    await supabase.storage.from('shared_images').remove([fileName]);
+                    throw new Error(`Database Error: ${dbError.message}`);
+                }
+
+                console.log("Upload successful!");
+                showNotification("تصویر کامیابی سے اپ لوڈ ہو گئی!", 'success');
+                
+                // فارم صاف کریں
+                fileInput.value = '';
+                descriptionInput.value = '';
+                document.getElementById('upload-status').classList.add('hidden');
+
+                // صرف Realtime پر انحصار کریں، manual refresh نہ کریں
+                // Realtime subscription خود بخود UI اپ ڈیٹ کر دے گی
+                
+            } catch (error) {
+                console.error("Upload Failed:", error);
+                handleError(error, "Photo Upload");
+                document.getElementById('upload-status').classList.add('hidden');
+            }
+        }
+
+        // تصاویر لوڈ کرنے کا فنکشن (Realtime Listener)
+        function loadPhotos() {
+            console.log("Loading photos with realtime updates...");
+            
+            // پرانی سبسکرپشن ختم کریں
+            if (photosChannel) {
+                supabase.removeChannel(photosChannel);
+            }
+
+            // Realtime Listener سیٹ کریں
+            photosChannel = supabase
+                .channel('photos-channel')
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'photos' 
+                    }, 
+                    (payload) => {
+                        console.log("Photos realtime update:", payload);
+                        if (!isManualRefresh) {
+                            fetchAndDisplayPhotos();
+                        }
+                    }
+                )
+                .on('postgres_changes', 
+                    { 
+                        event: '*', 
+                        schema: 'public', 
+                        table: 'comments' 
+                    }, 
+                    (payload) => {
+                        console.log("Comments realtime update:", payload);
+                        if (!isManualRefresh) {
+                            fetchAndDisplayPhotos();
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log("Realtime subscription status:", status);
+                    if (status === 'SUBSCRIBED') {
+                        console.log("Successfully subscribed to realtime updates");
+                    } else if (status === 'CHANNEL_ERROR') {
+                        console.error("Realtime channel error");
+                    } else if (status === 'TIMED_OUT') {
+                        console.error("Realtime subscription timed out");
+                    } else if (status === 'CLOSED') {
+                        console.log("Realtime channel closed");
+                    }
+                });
+            
+            // پہلی بار ڈیٹا فیچ کریں
+            fetchAndDisplayPhotos();
+        }
+
+        async function fetchAndDisplayPhotos() {
+            const photosContainer = document.getElementById('photos-container');
+            photosContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="loading-spinner mb-4"></div>
+                    <p class="text-white text-lg">تصاویر لوڈ کی جا رہی ہیں...</p>
+                </div>
+            `;
+
+            try {
+                console.log("Fetching photos from database...");
+                
+                // ڈیٹا لائیں
+                const { data: photos, error } = await supabase
+                    .from('photos')
+                    .select('id, Url, description, uploader_id, created_at') 
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error("Error fetching photos:", error);
+                    photosContainer.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                            <p class="text-red-700 text-lg">ڈیٹا لانے میں خرابی: ${error.message}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                console.log("Photos fetched:", photos);
+                photosContainer.innerHTML = ''; 
+
+                const isCurrentUserAdmin = userRole === 'admin';
+
+                // کمنٹس ایک ہی بار فیچ کریں
+                const { data: allComments, error: commentsError } = await supabase
+                    .from('comments')
+                    .select('id, photo_id, text, uploader_id, created_at')
+                    .order('created_at', { ascending: true });
+                
+                if (commentsError) console.error("Could not fetch all comments:", commentsError);
+                
+                const commentsByPhoto = (allComments || []).reduce((acc, comment) => {
+                    if (!acc[comment.photo_id]) acc[comment.photo_id] = [];
+                    acc[comment.photo_id].push(comment);
+                    return acc;
+                }, {});
+
+                console.log("Comments by photo:", commentsByPhoto);
+
+                if (photos.length === 0) {
+                    photosContainer.innerHTML = `
+                        <div class="text-center py-12 bg-white rounded-2xl shadow-lg fade-in">
+                            <i class="fas fa-images text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 text-xl mb-2">ابھی تک کوئی تصویر اپ لوڈ نہیں ہوئی ہے۔</p>
+                            <p class="text-gray-400">پہلی تصویر اپ لوڈ کرنے کے لیے اوپر والا فارم استعمال کریں۔</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                photosContainer.className = 'photo-grid fade-in';
+                
+                photos.forEach(photo => {
+                    const canDeletePhoto = photo.uploader_id === userId || isCurrentUserAdmin;
+                    
+                    const photoCard = document.createElement('div');
+                    photoCard.className = 'bg-card-bg rounded-2xl shadow-lg overflow-hidden card-hover';
+                    
+                    // Image
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'relative overflow-hidden bg-gray-100';
+                    
+                    const img = document.createElement('img');
+                    img.src = photo.Url; 
+                    img.alt = photo.description || 'تصویر';
+                    img.className = 'w-full h-64 object-cover transition-transform duration-500 hover:scale-105';
+                    img.loading = 'lazy';
+                    
+                    // Error Fallback
+                    img.onerror = function() { 
+                        console.error("Image failed to load:", this.src);
+                        this.onerror = null; 
+                        this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjMwMCIgeT0iMjAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjNkI3MjgwIiBmb250LWZhbWlseT0iQXJpYWwiPsS2YXbEg8SveMqgxYJ5IMqkIMqkxLJ5IMq8eCDKpMq8IMqweCDKpCDKvMucPC90ZXh0Pgo8L3N2Zz4K';
+                    };
+                    
+                    // Zoom Modal
+                    img.onclick = function() {
+                        const modal = document.createElement('div');
+                        modal.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4';
+                        modal.innerHTML = `
+                            <div class="relative max-w-4xl max-h-full">
+                                <img src="${this.src}" alt="${this.alt}" class="max-w-full max-h-full object-contain rounded-lg">
+                                <button class="absolute top-4 left-4 text-white text-2xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70 transition">×</button>
+                            </div>
+                        `;
+                        modal.querySelector('button').onclick = () => modal.remove();
+                        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+                        document.body.appendChild(modal);
+                    };
+                    
+                    imgContainer.appendChild(img);
+                    photoCard.appendChild(imgContainer);
+
+                    // Card Content
+                    const cardContent = document.createElement('div');
+                    cardContent.className = 'p-5';
+                    
+                    // Description
+                    if (photo.description) {
+                        const desc = document.createElement('p');
+                        desc.className = 'text-dark-text text-lg font-semibold mb-3 line-clamp-2';
+                        desc.textContent = photo.description;
+                        cardContent.appendChild(desc);
+                    }
+
+                    // Uploader Info and Date
+                    const metaInfo = document.createElement('div');
+                    metaInfo.className = 'flex justify-between items-center text-sm text-gray-500 mb-4';
+                    
+                    const uploaderInfo = document.createElement('div');
+                    const uploaderTag = photo.uploader_id === userId ? 
+                        `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">آپ</span>` : 
+                        `<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">صارف</span>`;
+                    uploaderInfo.innerHTML = `اپلوڈر: ${uploaderTag}`;
+                    
+                    const dateInfo = document.createElement('div');
+                    const photoDate = new Date(photo.created_at).toLocaleDateString('ur-PK');
+                    dateInfo.innerHTML = `<i class="far fa-clock ml-1"></i> ${photoDate}`;
+                    
+                    metaInfo.appendChild(uploaderInfo);
+                    metaInfo.appendChild(dateInfo);
+                    cardContent.appendChild(metaInfo);
+
+                    // Action Buttons
+                    const actionButtons = document.createElement('div');
+                    actionButtons.className = 'flex justify-between items-center';
+                    
+                    // Delete Button
+                    if (canDeletePhoto) {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn-danger text-white px-4 py-2 rounded-lg text-sm flex items-center';
+                        deleteBtn.innerHTML = `
+                            <i class="fas fa-trash ml-2"></i>
+                            ڈیلیٹ (${isCurrentUserAdmin ? 'ایڈمن' : 'مالک'})
+                        `;
+                        deleteBtn.onclick = () => deletePhoto(photo.id, photo.Url);
+                        actionButtons.appendChild(deleteBtn);
+                    } else {
+                        actionButtons.appendChild(document.createElement('div')); // Empty spacer
+                    }
+                    
+                    // Comment Count
+                    const commentCount = document.createElement('div');
+                    commentCount.className = 'text-gray-500 text-sm flex items-center';
+                    const count = commentsByPhoto[photo.id] ? commentsByPhoto[photo.id].length : 0;
+                    commentCount.innerHTML = `<i class="far fa-comment ml-1"></i> ${count} کمنٹ`;
+                    actionButtons.appendChild(commentCount);
+                    
+                    cardContent.appendChild(actionButtons);
+
+                    // Add Comment Section
+                    const commentForm = document.createElement('form');
+                    commentForm.className = 'mt-4 pt-4 border-t border-gray-200';
+                    commentForm.onsubmit = (e) => {
+                        e.preventDefault();
+                        submitComment(e, photo.id);
+                    };
+                    
+                    const commentInputGroup = document.createElement('div');
+                    commentInputGroup.className = 'flex flex-row-reverse items-center';
+                    
+                    const commentInput = document.createElement('input');
+                    commentInput.type = 'text';
+                    commentInput.id = `comment-input-${photo.id}`;
+                    commentInput.placeholder = 'اپنا کمنٹ لکھیں...';
+                    commentInput.className = 'flex-grow p-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-right';
+
+                    const commentButton = document.createElement('button');
+                    commentButton.type = 'submit';
+                    commentButton.className = 'bg-primary text-white px-4 py-3 rounded-l-lg hover:bg-secondary transition duration-150 flex items-center';
+                    commentButton.innerHTML = `<i class="fas fa-paper-plane ml-2"></i> بھیجیں`;
+
+                    commentInputGroup.appendChild(commentButton);
+                    commentInputGroup.appendChild(commentInput);
+                    commentForm.appendChild(commentInputGroup);
+                    cardContent.appendChild(commentForm);
+
+                    // Load Comments
+                    loadComments(photo.id, cardContent, commentsByPhoto[photo.id] || []);
+
+                    photoCard.appendChild(cardContent);
+                    photosContainer.appendChild(photoCard);
+                });
+
+            } catch (error) {
+                console.error('Unexpected error in fetchAndDisplayPhotos:', error);
+                handleError(error, "Fetch Photos");
+                photosContainer.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                        <p class="text-red-700 text-lg">غیر متوقع خرابی: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // تصویر ڈیلیٹ کرنے کا فنکشن
+        async function deletePhoto(photoId, imageUrl) {
+            // کنفرمیشن ماڈل
+             const confirmed = await new Promise(resolve => {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-xl text-right max-w-sm w-full fade-in">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-exclamation-triangle text-warning text-4xl mb-3"></i>
+                            <h3 class="text-xl font-bold mb-2 text-dark-text">تصویر ڈیلیٹ کریں</h3>
+                            <p class="text-gray-600">کیا آپ واقعی اس تصویر کو ڈیلیٹ کرنا چاہتے ہیں؟ یہ کارروائی واپس نہیں لی جا سکتی۔</p>
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button id="cancel-btn" class="bg-gray-300 text-dark-text px-4 py-2 rounded-lg hover:bg-gray-400 transition duration-150">منسوخ کریں</button>
+                            <button id="confirm-btn" class="btn-danger text-white px-4 py-2 rounded-lg transition duration-150">جی ہاں، ڈیلیٹ کریں</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                modal.querySelector('#cancel-btn').onclick = () => { modal.remove(); resolve(false); };
+                modal.querySelector('#confirm-btn').onclick = () => { modal.remove(); resolve(true); };
+            });
+
+            if (!confirmed) return;
+
+            try {
+                showNotification("تصویر ڈیلیٹ ہو رہی ہے...", 'info');
+                const isCurrentUserAdmin = userRole === 'admin';
+
+                // 1. ڈیٹا بیس سے تصویر کا ڈیٹا لائیں تاکہ uploader_id اور Url کی تصدیق ہو سکے
+                const { data: photoData, error: fetchError } = await supabase
+                    .from('photos')
+                    .select('Url, uploader_id')
+                    .eq('id', photoId)
+                    .single();
+
+                if (fetchError || !photoData) {
+                    throw new Error("تصویر ڈیٹا بیس میں نہیں ملی۔");
+                }
+
+                // سیکیورٹی چیک: صرف مالک یا ایڈمن ڈیلیٹ کر سکتا ہے (Client Side Check)
+                if (photoData.uploader_id !== userId && !isCurrentUserAdmin) {
+                    throw new Error("آپ کے پاس اس تصویر کو ڈیلیٹ کرنے کی اجازت نہیں ہے۔");
+                }
+                
+                // 2. Storage Path نکالیں اور Storage سے ڈیلیٹ کریں
+                const url = new URL(photoData.Url);
+                let storagePath = url.pathname.replace('/storage/v1/object/public/shared_images/', '');
+
+                if (storagePath) {
+                    const { error: storageError } = await supabase.storage.from('shared_images').remove([storagePath]);
+                    if (storageError && storageError.message !== 'The resource was not found') {
+                         console.warn("Storage delete failed (possibly due to RLS or missing file), continuing with DB delete:", storageError.message);
+                         // Don't throw, as DB deletion is the priority for UI refresh
+                    }
+                }
+
+                // 3. پہلے متعلقہ comments ڈیلیٹ کریں
+                await supabase.from('comments').delete().eq('photo_id', photoId);
+
+                // 4. Database سے تصویر ریکارڈ ڈیلیٹ کریں
+                let dbQuery = supabase
+                    .from('photos')
+                    .delete()
+                    .eq('id', photoId);
+
+                if (!isCurrentUserAdmin) {
+                    dbQuery = dbQuery.eq('uploader_id', userId); 
+                }
+
+                const { data: deleteData, error: dbError } = await dbQuery.select(); 
+
+                if (dbError) {
+                    throw new Error(`Database Delete Error: ${dbError.message}`);
+                }
+                
+                // RLS چیک
+                if (deleteData.length === 0) {
+                    let rlsWarning = "تصویر ڈیلیٹ نہیں ہو سکی۔ ایسا لگتا ہے کہ **Supabase RLS پالیسی** آپ کو اس تصویر کو ڈیلیٹ کرنے کی اجازت نہیں دے رہی ہے۔";
+                    if(isCurrentUserAdmin) {
+                         rlsWarning += " ایڈمن کے طور پر تمام تصاویر ڈیلیٹ کرنے کے لیے، آپ کو `photos` ٹیبل کی ڈیلیٹ پالیسی کو یقینی بنانا ہو گا کہ یہ تمام `authenticated` صارفین کے لیے اجازت دے یا آپ کے ایڈمن رول کو تسلیم کرے۔";
+                    } else {
+                         rlsWarning += " یقینی بنائیں کہ آپ کی RLS پالیسی مالک کو اپنی تصاویر ڈیلیٹ کرنے کی اجازت دیتی ہے۔";
+                    }
+                    throw new Error(rlsWarning);
+                }
+
+                showNotification("تصویر کامیابی سے ڈیلیٹ ہو گئی!", 'success');
+                
+                // صرف Realtime پر انحصار کریں، manual refresh نہ کریں
+                // Realtime subscription خود بخود UI اپ ڈیٹ کر دے گی
+
+            } catch (error) {
+                console.error("Delete error:", error);
+                handleError(error, "Delete Photo");
+            }
+        }
+
+        // کمنٹ ڈیلیٹ کرنا (صرف ایڈمن کے لیے)
+        async function deleteComment(commentId) {
+             const confirmed = await new Promise(resolve => {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-xl text-right max-w-sm w-full">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-trash text-warning text-4xl mb-3"></i>
+                            <h3 class="text-xl font-bold mb-2 text-dark-text">کمنٹ ڈیلیٹ کریں</h3>
+                            <p class="text-gray-600">کیا آپ واقعی اس کمنٹ کو ڈیلیٹ کرنا چاہتے ہیں؟</p>
+                        </div>
+                        <div class="flex justify-end gap-3">
+                            <button id="cancel-btn" class="bg-gray-300 text-dark-text px-4 py-2 rounded-lg hover:bg-gray-400 transition duration-150">منسوخ کریں</button>
+                            <button id="confirm-btn" class="btn-danger text-white px-4 py-2 rounded-lg transition duration-150">جی ہاں، ڈیلیٹ کریں</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                modal.querySelector('#cancel-btn').onclick = () => { modal.remove(); resolve(false); };
+                modal.querySelector('#confirm-btn').onclick = () => { modal.remove(); resolve(true); };
+            });
+
+            if (!confirmed) return;
+
+            if (userRole !== 'admin') {
+                showNotification("آپ کو یہ کمنٹ ڈیلیٹ کرنے کی اجازت نہیں ہے۔", 'error');
+                return;
+            }
+
+            try {
+                showNotification("کمنٹ ڈیلیٹ ہو رہا ہے...", 'info');
+                
+                // کمنٹ کو ڈیٹا بیس سے ڈیلیٹ کریں
+                const { data: deleteData, error } = await supabase
+                    .from('comments')
+                    .delete()
+                    .eq('id', commentId)
+                    .select();
+
+                if (error) throw error;
+                
+                if (deleteData.length === 0) {
+                     throw new Error("کمنٹ ڈیلیٹ نہیں ہو سکا۔ RLS کی خرابی یا اجازت کی کمی ہو سکتی ہے۔");
+                }
+
+                showNotification("کمنٹ کامیابی سے ڈیلیٹ ہو گیا!", 'success');
+                
+                // صرف Realtime پر انحصار کریں، manual refresh نہ کریں
+                // Realtime subscription خود بخود UI اپ ڈیٹ کر دے گی
+                
+            } catch (error) {
+                console.error("Delete comment error:", error);
+                handleError(error, "Delete Comment");
+            }
+        }
+
+        // Comments لوڈ کرنے کا فنکشن
+        function loadComments(photoId, cardElement, comments) {
+            // موجودہ comments section کو ڈھونڈیں یا نیا بنائیں
+            let commentsDiv = cardElement.querySelector('.comments-section');
+            if (!commentsDiv) {
+                commentsDiv = document.createElement('div');
+                commentsDiv.className = 'comments-section mt-4';
+                cardElement.appendChild(commentsDiv);
+            }
+
+            commentsDiv.innerHTML = ''; // پرانی comments صاف کریں
+            
+            if (!comments || comments.length === 0) {
+                return;
+            }
+
+            // Comments ڈسپلے کریں
+            comments.forEach(comment => {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'bg-gray-50 p-3 rounded-lg mb-2 relative border border-gray-200';
+                
+                const shortUserId = comment.uploader_id ? 
+                    comment.uploader_id.substring(0, 8) + '...' : 'Unknown';
+                
+                const isCommentOwner = comment.uploader_id === userId;
+                const userTag = isCommentOwner ? 
+                    `<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">آپ</span>` : 
+                    `<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">صارف</span>`;
+                
+                const commentDate = new Date(comment.created_at).toLocaleString('ur-PK', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                
+                commentDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm font-medium">${userTag}</span>
+                        </div>
+                        <span class="text-xs text-gray-500">${commentDate}</span>
+                    </div>
+                    <p class="text-dark-text text-sm mt-2">${comment.text}</p>
+                `;
+                
+                // ایڈمن کے لیے ڈیلیٹ بٹن شامل کریں
+                if (userRole === 'admin') {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'absolute top-2 left-2 text-xs text-red-500 hover:text-red-700 p-1 rounded-full bg-white transition duration-150';
+                    deleteBtn.innerHTML = `<i class="fas fa-times"></i>`;
+                    deleteBtn.onclick = () => deleteComment(comment.id);
+                    commentDiv.appendChild(deleteBtn);
+                }
+                
+                commentsDiv.appendChild(commentDiv);
+            });
+        }
+
+        // کمنٹ سبمٹ کرنے کا فنکشن 
+        async function submitComment(event, photoId) {
+            event.preventDefault();
+            
+            if (!userId) {
+                showNotification("کمنٹ کرنے کے لیے سائن ان ہونا ضروری ہے۔", 'warning');
+                return;
+            }
+
+            const commentInput = document.getElementById(`comment-input-${photoId}`);
+            const text = commentInput.value.trim();
+
+            if (text === '') return;
+
+            try {
+                const { error } = await supabase
+                    .from('comments')
+                    .insert([
+                        { photo_id: photoId, uploader_id: userId, text: text }
+                    ]);
+
+                if (error) throw error;
+
+                commentInput.value = ''; // صاف کریں
+                showNotification("کمنٹ شامل ہو گیا!", 'success');
+                
+                // صرف Realtime پر انحصار کریں، manual refresh نہ کریں
+                // Realtime subscription خود بخود UI اپ ڈیٹ کر دے گی
+                
+            } catch (error) {
+                console.error("Comment submit error:", error);
+                handleError(error, "Submit Comment");
+            }
+        }
+
+        // نوٹیفکیشن دکھانے کا فنکشن 
+        function showNotification(message, type = 'info') {
+            const notificationBox = document.getElementById('notification-box');
+            notificationBox.textContent = message;
+            notificationBox.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 text-white text-center p-4 rounded-xl shadow-lg z-50 transition duration-300 w-11/12 max-w-md notification fade-in';
+            
+            notificationBox.classList.remove('bg-red-500', 'bg-green-500', 'bg-yellow-500', 'bg-blue-500');
+            
+            if (type === 'error') {
+                notificationBox.classList.add('bg-red-500');
+            } else if (type === 'success') {
+                notificationBox.classList.add('bg-green-500');
+            } else if (type === 'warning') {
+                notificationBox.classList.add('bg-yellow-500');
+            } else {
+                notificationBox.classList.add('bg-blue-500');
+            }
+
+            notificationBox.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notificationBox.classList.add('hidden');
+            }, 5000);
+        }
+
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
+
+    <!-- نوٹیفکیشن باکس -->
+    <div id="notification-box" class="hidden"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-dark-text font-bold text-lg">براہ کرم انتظار کریں...</p>
+            <p class="text-gray-600 mt-2">سسٹم تیار ہو رہا ہے</p>
+        </div>
+    </div>
+
+    <!-- 1. Login Screen -->
+    <div id="login-screen" class="min-h-screen flex flex-col justify-center items-center p-4">
+        <div class="glass-effect rounded-3xl shadow-2xl p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <i class="fas fa-camera-retro text-6xl text-white mb-4"></i>
+                <h1 class="text-4xl font-bold text-white mb-2">تصویر گیلری</h1>
+                <p class="text-white/80 text-lg">تصاویر اور کمنٹس کا اشتراک</p>
+            </div>
+
+            <p id="login-message" class="text-white text-center mb-6 text-lg">اپنے کردار کے ساتھ سائن ان کریں:</p>
+
+            <form id="login-form" class="space-y-5">
+                <div class="bg-white/20 rounded-xl p-4">
+                    <p class="text-white font-semibold text-lg mb-3 text-center border-b border-white/30 pb-2">بطور ایڈمن لاگ ان کریں:</p>
+                    <input type="password" id="admin-secret-input" placeholder="ایڈمن کا خفیہ کوڈ (admin123)" class="w-full p-4 rounded-lg bg-white/90 focus:outline-none focus:ring-2 focus:ring-white text-right">
+                    
+                    <button type="submit" class="w-full btn-primary text-white py-4 rounded-xl text-lg font-bold mt-4 transition duration-300">
+                        <i class="fas fa-user-shield ml-2"></i>
+                        بطور ایڈمن سائن ان
+                    </button>
+                </div>
+            </form>
+            
+            <div class="flex items-center my-6">
+                <div class="flex-grow border-t border-white/30"></div>
+                <span class="flex-shrink mx-4 text-white/80">یا</span>
+                <div class="flex-grow border-t border-white/30"></div>
+            </div>
+
+            <button id="standard-login-btn" class="w-full btn-success text-white py-4 rounded-xl text-lg font-bold shadow-lg transition duration-300">
+                <i class="fas fa-user ml-2"></i>
+                بطور عام صارف جاری رکھیں
+            </button>
+            
+            <div class="mt-6 p-4 bg-black/20 rounded-xl">
+                <p class="text-white/90 text-sm text-center">
+                    <i class="fas fa-info-circle ml-1"></i>
+                    عام صارف صرف اپنی تصاویر ڈیلیٹ کر سکتا ہے، جبکہ ایڈمن سب کی تصاویر ڈیلیٹ کر سکتا ہے۔
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 2. Main Application Screen -->
+    <div id="main-app" class="hidden min-h-screen pb-12">
+        <div class="container mx-auto px-4 pt-8">
+            <!-- Header -->
+            <header class="glass-effect rounded-2xl shadow-lg p-6 mb-8 fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="text-center md:text-right mb-4 md:mb-0">
+                        <h1 class="text-3xl font-bold text-white mb-2">تصویر گیلری</h1>
+                        <p class="text-white/80">تصاویر اور کمنٹس کا اشتراک</p>
+                    </div>
+                    
+                    <div class="bg-white/20 rounded-xl p-4 text-white text-center">
+                        <p class="text-sm mb-1">آپ کا رول</p>
+                        <p id="user-id" class="font-semibold">...</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Upload Section -->
+            <section class="glass-effect rounded-2xl shadow-lg p-6 mb-8 fade-in">
+                <h2 class="text-2xl font-bold text-white mb-4 text-center">
+                    <i class="fas fa-cloud-upload-alt ml-2"></i>
+                    نئی تصویر اپ لوڈ کریں
+                </h2>
+                
+                <form id="photo-form" class="space-y-5">
+                    <div class="bg-white/20 rounded-xl p-4">
+                        <label class="block text-white font-medium mb-2 text-right">
+                            <i class="fas fa-image ml-2"></i>
+                            تصویر منتخب کریں:
+                        </label>
+                        <input type="file" id="file-input" accept="image/*" class="w-full p-3 rounded-lg bg-white/90 focus:outline-none focus:ring-2 focus:ring-white">
+                    </div>
+
+                    <div class="bg-white/20 rounded-xl p-4">
+                        <label class="block text-white font-medium mb-2 text-right">
+                            <i class="fas fa-pen ml-2"></i>
+                            تصویر کی تفصیل:
+                        </label>
+                        <input type="text" id="description-input" placeholder="اپنی تصویر کے بارے میں کچھ لکھیں..." class="w-full p-4 rounded-lg bg-white/90 focus:outline-none focus:ring-2 focus:ring-white text-right">
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-primary text-white py-4 rounded-xl text-lg font-bold shadow-lg transition duration-300">
+                        <i class="fas fa-upload ml-2"></i>
+                        تصویر اپ لوڈ کریں
+                    </button>
+                    
+                    <!-- اپ لوڈ اسٹیٹس -->
+                    <p id="upload-status" class="hidden text-white text-center p-3 bg-white/20 rounded-lg">
+                        <span id="upload-message">...</span>
+                    </p>
+                </form>
+            </section>
+
+            <!-- Gallery Section -->
+            <section class="fade-in">
+                <div class="glass-effect rounded-2xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-white mb-6 text-center border-b border-white/30 pb-4">
+                        <i class="fas fa-images ml-2"></i>
+                        سب کی شیئر کردہ تصاویر
+                    </h2>
+                    <div id="photos-container">
+                        <!-- یہاں تصاویر Realtime میں لوڈ ہوں گی -->
+                        <div class="text-center py-12">
+                            <div class="loading-spinner mb-4"></div>
+                            <p class="text-white text-lg">تصاویر لوڈ ہو رہی ہیں...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-white/70 text-sm">
+            <p>تصویر گیلری - تصاویر اور کمنٹس کا اشتراک پلیٹ فارم</p>
+        </footer>
+    </div>
+</body>
+</html>
